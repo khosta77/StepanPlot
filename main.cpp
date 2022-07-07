@@ -1,4 +1,4 @@
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 #include <cmath>
 #include <iostream>
 #include <functional>
@@ -14,24 +14,91 @@ class StepanPlot {
 private:
     vector<pair<vector<double>, vector<double>>> df;
     vector<int> window;
-
-
-//    GLubyte *pixels = NULL;
-//    const GLenum FORMAT = GL_RGBA;
     const GLuint FORMAT_NBYTES = 4;
-    const unsigned int HEIGHT = 512;
-    const unsigned int WIDTH = 1024;
+
+    struct frame {  // Рамка
+        unsigned int HEIGHT = 512;
+        unsigned int WIDTH = 512;
+    } fr;
+
+    struct position {  // Расположение при создании нового окна
+        unsigned int X = 0;
+        unsigned int Y = 0;
+    } pos;
+
+    struct ortho {
+        double left;
+        double right;
+        double bottom;
+        double top;
+        double near = 0.0;
+        double far = 100.0;
+    };
+
+    vector<ortho> ort;
+
+//    struct plot {
+//
+//    };
+//
+//    map<int, >
+
+private:
+    double max(vector<double> O) {
+        if (O.empty()) {
+            return 0;
+        }
+
+        double max = O[0];
+        for (size_t i = 0; i < O.size(); i++) {
+            if (O[i] > max) {
+                max = O[i];
+            }
+        }
+
+        return max;
+    }
+
+    double min(vector<double> O) {
+        if (O.empty()) {
+            return 0;
+        }
+
+        double min = O[0];
+        for (size_t i = 0; i < O.size(); i++) {
+            if (O[i] < min) {
+                min = O[i];
+            }
+        }
+
+        return min;
+    }
+
 public:
     StepanPlot(int argc, char** argv) {
         glutInit(&argc, argv);
-        glutInitDisplayMode (GLUT_SINGLE | GLUT_RGB);
-        glutInitWindowSize(WIDTH, HEIGHT);
-        glutInitWindowPosition(40, 40);
+        glutSetOption(
+                GLUT_ACTION_ON_WINDOW_CLOSE,
+                GLUT_ACTION_CONTINUE_EXECUTION);
+//        glutInitDisplayMode (GLUT_SINGLE | GLUT_RGB);
+//        glutInitWindowSize(fr.WIDTH, fr.HEIGHT);
+//        glutInitWindowPosition(pos.X, pos.Y);
     }
 
     void draw() {
         int win = glutGetWindow() - 1;
         glClear(GL_COLOR_BUFFER_BIT);
+        {
+            glColor3f(0, 0, 0);
+            glBegin(GL_POINTS);
+            for (double ax = -100.0; ax < 100.0; ax += 0.25) {
+                for (double bx = -100.0; bx < 100.0; bx += 0.25)
+                {
+                    glVertex2d(ax, bx);
+                }
+            }
+            glEnd();
+        }
         glBegin(GL_LINES);
         {
             glColor3f(1,0,0);
@@ -50,7 +117,7 @@ public:
         }
         glEnd();
         glFlush();
-        screenshot_ppm("tmp", (uint32_t)WIDTH, (uint32_t)HEIGHT, &pixels);  // \
+//        screenshot_ppm("tmp", (uint32_t)WIDTH, (uint32_t)HEIGHT, &pixels);  // \
         вводим команду чтобы сделать скриншот
     }
 
@@ -58,16 +125,26 @@ public:
         currentInstance->draw();
     }
 
+    void init_display_mode() {
+        glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+        glutInitWindowSize(fr.WIDTH, fr.HEIGHT);
+        glutInitWindowPosition(pos.X, pos.Y);
+    }
+
     void init() {
         glClearColor(1.0, 1.0, 1.0, 1.0);
-        glColor3f(0.6, 1.0, 0.0);
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
+//        glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+//        glutInitWindowSize(fr.WIDTH, fr.HEIGHT);
+//        glutInitWindowPosition(pos.X, pos.Y);
+//        glColor3f(0.6, 1.0, 0.0);
+//        glMatrixMode(GL_PROJECTION);
+//        glLoadIdentity();
         glOrtho(-20.0, 500.0, -1.2, 1.2, 0.0, 100.0);
-        pixels = (unsigned char*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);  // ???
+//        pixels = (unsigned char*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);  // ???
     }
 
     void plot(vector<double> x, vector<double> y, const char *name) {
+        init_display_mode();
         window.push_back(glutCreateWindow(name));
         df.push_back(pair<vector<double>, vector<double>>(x, y));
         currentInstance = this;
