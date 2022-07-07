@@ -4,7 +4,13 @@
 #include <functional>
 #include <vector>
 #include <map>
+//#include <ctime>
+
 using namespace std;
+
+static double DoubleRand(double _max, double _min) {
+    return _min + double(rand()) / RAND_MAX * (_max - _min);
+}
 
 class StepanPlot;
 
@@ -12,6 +18,7 @@ static StepanPlot* currentInstance;
 
 class StepanPlot {
 private:
+    bool hold = false;
     vector<pair<vector<double>, vector<double>>> df;
     vector<int> window;
     const GLuint FORMAT_NBYTES = 4;
@@ -26,7 +33,7 @@ private:
         unsigned int Y = 0;
     } pos;
 
-    struct ortho {
+    struct ortho {  // Характеристики окна в котором стоим график
         double left;
         double right;
         double bottom;
@@ -35,13 +42,28 @@ private:
         double far = 100.0;
     };
 
-    vector<ortho> ort;
+    struct brush {  // Кисть
+        double r;
+        double b;
+        double g;
 
-//    struct plot {
-//
-//    };
-//
-//    map<int, >
+        brush() {
+            r = DoubleRand(1.0, 0.0);
+            b = DoubleRand(1.0, 0.0);
+            g = DoubleRand(1.0, 0.0);
+        }
+    };
+
+//    vector<ortho> ort;
+
+    struct plotInfo {
+        string name;
+        pair<vector<double>, vector<double>> XOY;
+        ortho ort_XOY;
+        brush pb;
+    };
+
+    map<int, vector<plotInfo>> plt;
 
 private:
     double max(vector<double> O) {
@@ -86,7 +108,7 @@ public:
     }
 
     void draw() {
-        int win = glutGetWindow() - 1;
+        int win = glutGetWindow();
         glClear(GL_COLOR_BUFFER_BIT);
         {
             glColor3f(0, 0, 0);
@@ -110,11 +132,17 @@ public:
         }
         glEnd();
         glBegin(GL_POINTS);
-        glColor3f(1, .2, 0);
-        for (double i = 1; i < StepanPlot::df[win].first.size(); i++) {
-            glVertex2d(StepanPlot::df[win].first[i - 1], StepanPlot::df[win].second[i - 1]);
-            glVertex2d(StepanPlot::df[win].first[i], StepanPlot::df[win].second[i]);
+        cout << "4" << endl;
+
+        glColor3f(plt[win][0].pb.r, plt[win][0].pb.g, plt[win][0].pb.b);
+        for (double i = 1; i < plt[win][0].XOY.first.size(); i++) {
+            glVertex2d(plt[win][0].XOY.first[i - 1],
+                       plt[win][0].XOY.second[i - 1]);
+            glVertex2d(plt[win][0].XOY.first[i],
+                       plt[win][0].XOY.second[i]);
         }
+        cout << "5" << endl;
+
         glEnd();
         glFlush();
 //        screenshot_ppm("tmp", (uint32_t)WIDTH, (uint32_t)HEIGHT, &pixels);  // \
@@ -133,20 +161,40 @@ public:
 
     void init() {
         glClearColor(1.0, 1.0, 1.0, 1.0);
-//        glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-//        glutInitWindowSize(fr.WIDTH, fr.HEIGHT);
-//        glutInitWindowPosition(pos.X, pos.Y);
-//        glColor3f(0.6, 1.0, 0.0);
-//        glMatrixMode(GL_PROJECTION);
-//        glLoadIdentity();
-        glOrtho(-20.0, 500.0, -1.2, 1.2, 0.0, 100.0);
+        cout << "2" << endl;
+
+        ortho ort = plt[glutGetWindow()][0].ort_XOY;
+//        cout << ort.left << " " << ort.right << " " << ort.bottom << " " << ort.top << endl;
+        glOrtho(ort.left, ort.right, ort.bottom, ort.top, 0.0, 100.0);
+        cout << "3" << endl;
+
 //        pixels = (unsigned char*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);  // ???
     }
 
-    void plot(vector<double> x, vector<double> y, const char *name) {
+    void plot(vector<double> x, vector<double> y, const char *plotName) {
+        if (x.empty() || y.empty()) {
+            return;  // Вывести ошибку
+        }
+
+        ortho ort_OXY = {
+                .left = min(x),
+                .right = max(x),
+                .bottom = min(y),
+                .top = max(y)
+        };
+
+        plotInfo pl = {
+                .name = plotName,
+                .XOY = pair<vector<double>, vector<double>>(x, y),
+                .ort_XOY = ort_OXY,
+        };
+
         init_display_mode();
-        window.push_back(glutCreateWindow(name));
-        df.push_back(pair<vector<double>, vector<double>>(x, y));
+        plt[glutCreateWindow(plotName)].push_back(pl);
+        cout << "1" << endl;
+
+//        window.push_back(glutCreateWindow(name));
+//        df.push_back(pair<vector<double>, vector<double>>(x, y));
         currentInstance = this;
         glutDisplayFunc(StepanPlot::display);
         init();
@@ -205,7 +253,7 @@ int main(int argc, char** argv) {
     vector<double> X;
     vector<double> Y1, Y2;
 
-    for (double i = 0.1; i <= 500; i+=0.1) {
+    for (double i = 0.0; i <= 500.1; i+=0.1) {
         X.push_back(i);
         Y1.push_back(func_cos(i));
         Y2.push_back(func_sin(i));
