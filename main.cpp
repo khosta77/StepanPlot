@@ -4,7 +4,13 @@
 #include <functional>
 #include <vector>
 #include <map>
-//#include <ctime>
+
+// TODO: на 08.08
+//  1) Добавить hold
+//  2) Красивая отрисовки сетки
+//  3) Возможность писать текст на графике
+//  4) Рисовать оси, если они попадают
+//  5) ...
 
 using namespace std;
 
