@@ -132,7 +132,6 @@ public:
         }
         glEnd();
         glBegin(GL_POINTS);
-        cout << "4" << endl;
 
         glColor3f(plt[win][0].pb.r, plt[win][0].pb.g, plt[win][0].pb.b);
         for (double i = 1; i < plt[win][0].XOY.first.size(); i++) {
@@ -141,7 +140,6 @@ public:
             glVertex2d(plt[win][0].XOY.first[i],
                        plt[win][0].XOY.second[i]);
         }
-        cout << "5" << endl;
 
         glEnd();
         glFlush();
@@ -161,12 +159,10 @@ public:
 
     void init() {
         glClearColor(1.0, 1.0, 1.0, 1.0);
-        cout << "2" << endl;
 
         ortho ort = plt[glutGetWindow()][0].ort_XOY;
 //        cout << ort.left << " " << ort.right << " " << ort.bottom << " " << ort.top << endl;
         glOrtho(ort.left, ort.right, ort.bottom, ort.top, 0.0, 100.0);
-        cout << "3" << endl;
 
 //        pixels = (unsigned char*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);  // ???
     }
@@ -191,7 +187,6 @@ public:
 
         init_display_mode();
         plt[glutCreateWindow(plotName)].push_back(pl);
-        cout << "1" << endl;
 
 //        window.push_back(glutCreateWindow(name));
 //        df.push_back(pair<vector<double>, vector<double>>(x, y));
