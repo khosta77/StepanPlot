@@ -6,7 +6,6 @@
 #include <map>
 
 // TODO: на 08.08
-//  1) Добавить hold
 //  2) Красивая отрисовки сетки
 //  3) Возможность писать текст на графике
 //  4) Рисовать оси, если они попадают
@@ -24,7 +23,8 @@ static StepanPlot* currentInstance;
 
 class StepanPlot {
 private:
-    bool hold = false;
+    bool hold_status = false;
+    bool first_plot = false;
     vector<pair<vector<double>, vector<double>>> df;
     vector<int> window;
     const GLuint FORMAT_NBYTES = 4;
@@ -108,43 +108,45 @@ public:
         glutSetOption(
                 GLUT_ACTION_ON_WINDOW_CLOSE,
                 GLUT_ACTION_CONTINUE_EXECUTION);
-//        glutInitDisplayMode (GLUT_SINGLE | GLUT_RGB);
-//        glutInitWindowSize(fr.WIDTH, fr.HEIGHT);
-//        glutInitWindowPosition(pos.X, pos.Y);
     }
 
     void draw() {
         int win = glutGetWindow();
         glClear(GL_COLOR_BUFFER_BIT);
-        {
-            glColor3f(0, 0, 0);
-            glBegin(GL_POINTS);
-            for (double ax = -100.0; ax < 100.0; ax += 0.25) {
-                for (double bx = -100.0; bx < 100.0; bx += 0.25)
-                {
-                    glVertex2d(ax, bx);
-                }
-            }
-            glEnd();
-        }
-        glBegin(GL_LINES);
-        {
-            glColor3f(1,0,0);
-            glVertex2f(-20, 0);
-            glVertex2f(500, 0);
-            glColor3f(0,1, 0);
-            glVertex2f(0, -100);
-            glVertex2f(0, 100);
-        }
-        glEnd();
+//        {  // Сетка
+//            glColor3f(0, 0, 0);
+//            glBegin(GL_POINTS);
+//            for (double ax = -100.0; ax < 100.0; ax += 0.25) {
+//                for (double bx = -100.0; bx < 100.0; bx += 0.25)
+//                {
+//                    glVertex2d(ax, bx);
+//                }
+//            }
+//            glEnd();
+//        }
+//        glBegin(GL_LINES);  // Оси
+//        {
+//            glColor3f(1,0,0);
+//            glVertex2f(-20, 0);
+//            glVertex2f(500, 0);
+//            glColor3f(0,1, 0);
+//            glVertex2f(0, -100);
+//            glVertex2f(0, 100);
+//        }
+//        glEnd();
         glBegin(GL_POINTS);
+        if (plt.empty()) {
+            return;
+        }
 
-        glColor3f(plt[win][0].pb.r, plt[win][0].pb.g, plt[win][0].pb.b);
-        for (double i = 1; i < plt[win][0].XOY.first.size(); i++) {
-            glVertex2d(plt[win][0].XOY.first[i - 1],
-                       plt[win][0].XOY.second[i - 1]);
-            glVertex2d(plt[win][0].XOY.first[i],
-                       plt[win][0].XOY.second[i]);
+        for (size_t st = 0; st < plt[win].size(); st++) {
+            glColor3f(plt[win][st].pb.r, plt[win][st].pb.g, plt[win][st].pb.b);
+            for (double i = 1; i < plt[win][st].XOY.first.size(); i++) {
+                glVertex2d(plt[win][st].XOY.first[i - 1],
+                           plt[win][st].XOY.second[i - 1]);
+                glVertex2d(plt[win][st].XOY.first[i],
+                           plt[win][st].XOY.second[i]);
+            }
         }
 
         glEnd();
@@ -166,11 +168,30 @@ public:
     void init() {
         glClearColor(1.0, 1.0, 1.0, 1.0);
 
-        ortho ort = plt[glutGetWindow()][0].ort_XOY;
-//        cout << ort.left << " " << ort.right << " " << ort.bottom << " " << ort.top << endl;
+        vector<double> OX_left, OX_right, OX_bottom, OX_top;
+        for (size_t i = 0; i < plt[glutGetWindow()].size(); i++) {
+            OX_left.push_back(plt[glutGetWindow()][i].ort_XOY.left);
+            OX_right.push_back(plt[glutGetWindow()][i].ort_XOY.right);
+            OX_bottom.push_back(plt[glutGetWindow()][i].ort_XOY.bottom);
+            OX_top.push_back(plt[glutGetWindow()][i].ort_XOY.top);
+        }
+
+        ortho ort = {
+                .left = min(OX_left),
+                .right = max(OX_right),
+                .bottom = min(OX_bottom),
+                .top = max(OX_top)
+        };
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
         glOrtho(ort.left, ort.right, ort.bottom, ort.top, 0.0, 100.0);
 
-//        pixels = (unsigned char*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);  // ???
+//        pixels = (unsigned char*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);  // Выделение пиксилей
+    }
+
+    void hold(bool status) {
+        hold_status = status;
     }
 
     void plot(vector<double> x, vector<double> y, const char *plotName) {
@@ -191,14 +212,27 @@ public:
                 .ort_XOY = ort_OXY,
         };
 
-        init_display_mode();
-        plt[glutCreateWindow(plotName)].push_back(pl);
+        static unsigned int currentWindow;
+        if (!hold_status) {
+            currentWindow = initDisplay(pl, plotName);
+        } else {
+            if (plt.empty()) {
+                currentWindow = initDisplay(pl, plotName);
+            } else {
+                plt[currentWindow].push_back(pl);
+                init();
+            }
+        }
+    }
 
-//        window.push_back(glutCreateWindow(name));
-//        df.push_back(pair<vector<double>, vector<double>>(x, y));
+    int initDisplay(plotInfo pl, const char *plotName) {
+        init_display_mode();
+        unsigned int currentWindow = glutCreateWindow(plotName);
+        plt[currentWindow].push_back(pl);
         currentInstance = this;
         glutDisplayFunc(StepanPlot::display);
         init();
+        return currentWindow;
     }
 
 //    void plot(vector<double> x, vector<double> y) {
@@ -250,14 +284,19 @@ static auto func_sin(double x) {
     return  sin(x/20);
 }
 
+static auto func_exp(double x) {
+    return  exp(x/20);
+}
+
 int main(int argc, char** argv) {
     vector<double> X;
-    vector<double> Y1, Y2;
+    vector<double> Y1, Y2, Y3;
 
     for (double i = 0.0; i <= 500.1; i+=0.1) {
         X.push_back(i);
         Y1.push_back(func_cos(i));
         Y2.push_back(func_sin(i));
+        Y3.push_back(func_exp(i));
     }
 
 //    for (int i = 0; i < X.size(); i++) {
@@ -266,7 +305,11 @@ int main(int argc, char** argv) {
 
     StepanPlot test(argc, argv);
     test.plot(X, Y1, "cos");
+//    test.hold(true);
     test.plot(X, Y2, "sin");
+//    test.plot(X, Y1, "cos");
+    test.hold(true);
+    test.plot(X, Y3, "exp");
     test.call();
     return 0;
 }
