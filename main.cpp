@@ -25,6 +25,7 @@ class StepanPlot {
 private:
     bool hold_status = false;
     bool first_plot = false;
+    bool grid_status = true;
     vector<pair<vector<double>, vector<double>>> df;
     vector<int> window;
     const GLuint FORMAT_NBYTES = 4;
@@ -113,6 +114,8 @@ public:
     void draw() {
         int win = glutGetWindow();
         glClear(GL_COLOR_BUFFER_BIT);
+//        grid_status ? grid() : 1;
+        grid();
 //        {  // Сетка
 //            glColor3f(0, 0, 0);
 //            glBegin(GL_POINTS);
@@ -155,6 +158,44 @@ public:
         вводим команду чтобы сделать скриншот
     }
 
+    void grid() {
+        ortho ort = get_this_ortho(plt[glutGetWindow()]);
+        cout << ort.left << " " << ort.right  << " " <<  ort.bottom  << " " << ort.top << "|" << int(ort.right - ort.left)/10 << endl;
+
+        glColor3f(0, 0, 0);
+        glBegin(GL_POINTS);
+
+        double shag_x = 0.25;  // (ort.right - ort.left)/5;
+
+        for (double dx = ort.bottom, shag = (ort.top - ort.left)/10; dx < ort.top; dx += shag) {
+            glVertex2d(ort.left, dx);
+            glVertex2d(ort.right, dx);
+        }
+//        for (double ax = ort.bottom; ax < ort.top; ax += shag_x) {
+//            for (double bx = ort.left; bx < ort.right; bx += shag_x) {
+//                glVertex2d(bx, ax);
+//            }
+//        }
+//        for (double ax = ort.top; ax > ort.bottom; ax -= shag_x) {
+//            for (double bx = ort.right; bx > ort.left; bx -= shag_x) {
+//                glVertex2d(ax, bx);
+//            }
+//        }
+        glEnd();
+
+//        glColor3f(0, 0, 0);
+//        glBegin(GL_POINTS);
+//
+//        double shag_x = 0.25;  // (ort.right - ort.left)/5;
+//        for (double ax = ort.bottom; ax < ort.top; ax += shag_x) {
+//            for (double bx = ort.bottom; bx < ort.top; bx += shag_x) {
+//                glVertex2d(ax, bx);
+//            }
+//        }
+//
+//        glEnd();
+    }
+
     static void display() {
         currentInstance->draw();
     }
@@ -168,6 +209,7 @@ public:
     void init() {
         glClearColor(1.0, 1.0, 1.0, 1.0);
 
+        // Выделить это в отдельную переменную
         vector<double> OX_left, OX_right, OX_bottom, OX_top;
         for (size_t i = 0; i < plt[glutGetWindow()].size(); i++) {
             OX_left.push_back(plt[glutGetWindow()][i].ort_XOY.left);
@@ -185,13 +227,38 @@ public:
 
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
+//        cout << ort.left << " " << ort.right  << " " <<  ort.bottom  << " " << ort.top << endl;
         glOrtho(ort.left, ort.right, ort.bottom, ort.top, 0.0, 100.0);
 
 //        pixels = (unsigned char*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);  // Выделение пиксилей
     }
 
+    ortho get_this_ortho(vector<plotInfo> vecPlt) {
+        // Выделить это в отдельную переменную
+        vector<double> OX_left, OX_right, OX_bottom, OX_top;
+        for (size_t i = 0; i < vecPlt.size(); i++) {
+            OX_left.push_back(vecPlt[i].ort_XOY.left);
+            OX_right.push_back(vecPlt[i].ort_XOY.right);
+            OX_bottom.push_back(vecPlt[i].ort_XOY.bottom);
+            OX_top.push_back(vecPlt[i].ort_XOY.top);
+        }
+
+        ortho ort = {
+                .left = min(OX_left),
+                .right = max(OX_right),
+                .bottom = min(OX_bottom),
+                .top = max(OX_top)
+        };
+
+        return ort;
+    }
+
     void hold(bool status) {
         hold_status = status;
+    }
+
+    void grid(bool status) {
+        grid_status = status;
     }
 
     void plot(vector<double> x, vector<double> y, const char *plotName) {
@@ -306,10 +373,10 @@ int main(int argc, char** argv) {
     StepanPlot test(argc, argv);
     test.plot(X, Y1, "cos");
 //    test.hold(true);
-    test.plot(X, Y2, "sin");
-//    test.plot(X, Y1, "cos");
-    test.hold(true);
-    test.plot(X, Y3, "exp");
+//    test.plot(X, Y2, "sin");
+////    test.plot(X, Y1, "cos");
+//    test.hold(true);
+//    test.plot(X, Y3, "exp");
     test.call();
     return 0;
 }
