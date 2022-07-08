@@ -316,6 +316,10 @@ public:
     void call() {
         glutMainLoop();
     }
+
+    ~StepanPlot() {
+        glutMainLoop();
+    }
 };
 
 static auto func_cos(double x) {
@@ -354,6 +358,6 @@ int main(int argc, char** argv) {
 ////    test.plot(X, Y1, "cos");
 //    test.hold(true);
 //    test.plot(X, Y3, "exp");
-    test.call();
+//    test.call();
     return 0;
 }
