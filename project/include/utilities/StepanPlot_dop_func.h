@@ -1,7 +1,7 @@
 #ifndef PLOT_TEST_STEPANPLOT_DOP_FUNC_H
 #define PLOT_TEST_STEPANPLOT_DOP_FUNC_H
 
-#include <vector>
+#include "StepanPlot_exception.h"
 
 namespace stepan_plot {
 
