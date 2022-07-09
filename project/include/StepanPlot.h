@@ -9,6 +9,8 @@
 #include <map>
 
 #include "./utilities/StepanPlot_dop_func.h"
+#include "./utilities/StepanPlot_data_frame.h"
+#include "./utilities/StepanPlot_exception.h"
 
 using namespace std;
 
@@ -37,46 +39,10 @@ namespace stepan_plot {
 
         const GLuint FORMAT_NBYTES = 4;
 
-        struct frame {  // Рамка
-            unsigned int HEIGHT = 512;
-            unsigned int WIDTH = 512;
-        } fr;
+        df::Frame win_fr;
+        df::Position win_pos;
 
-        struct position {  // Расположение при создании нового окна
-            unsigned int X = 0;
-            unsigned int Y = 0;
-        } pos;
-
-        struct ortho {  // Характеристики окна в котором стоим график
-            double left;
-            double right;
-            double bottom;
-            double top;
-            double near = 0.0;
-            double far = 100.0;
-        };
-
-        struct brush {  // Кисть
-            double r;
-            double b;
-            double g;
-
-            brush() {
-                r = af::rand_factor(1.0, 0.0);
-                b = af::rand_factor(1.0, 0.0);
-                g = af::rand_factor(1.0, 0.0);
-            }
-        };
-
-        struct plotInfo {
-            string name;
-            pair <vector<double>, vector<double>> XOY;
-            ortho ort_XOY;
-            brush pb;
-            bool grid_status = false;
-        };
-
-        map<int, vector<plotInfo>> plt;
+        map<int, vector<df::plot_frame>> plt;
 
     public:
         StepanPlot(int argc, char **argv) {
@@ -101,7 +67,7 @@ namespace stepan_plot {
 
             glBegin(GL_POINTS);
             for (size_t st = 0; st < plt[win].size(); st++) {
-                glColor3f(plt[win][st].pb.r, plt[win][st].pb.g, plt[win][st].pb.b);
+                glColor3f(plt[win][st].br.r, plt[win][st].br.g, plt[win][st].br.b);
                 glLineWidth(0);
                 for (double i = 1; i < plt[win][st].XOY.first.size(); i++) {
                     glVertex2d(plt[win][st].XOY.first[i - 1],
@@ -118,16 +84,16 @@ namespace stepan_plot {
         }
 
         void grid() {
-            ortho ort = get_this_ortho(plt[glutGetWindow()]);
-            glColor3f(0.9, 0.9, 0.9);
+            df::Ortho ort = get_this_ortho(plt[glutGetWindow()]);
+            glColor3f(0.9, 0.9, 0.9);  // Вынести в константу это
             glBegin(GL_LINES);
-            for (double dy = ort.bottom, shag = (ort.top - ort.bottom) / 10; dy <= ort.top; dy += shag) {
-                glVertex2d(ort.left, dy);
-                glVertex2d(ort.right, dy);
+            for (double dy = ort.b, shag = (ort.t - ort.b) / 10; dy <= ort.t; dy += shag) {  // Вынести в константу коэффицент с клетками
+                glVertex2d(ort.l, dy);
+                glVertex2d(ort.r, dy);
             }
-            for (double dx = ort.left, shag = (ort.right - ort.left) / 10; dx <= ort.right; dx += shag) {
-                glVertex2d(dx, ort.bottom);
-                glVertex2d(dx, ort.top);
+            for (double dx = ort.l, shag = (ort.r - ort.l) / 10; dx <= ort.r; dx += shag) {
+                glVertex2d(dx, ort.b);
+                glVertex2d(dx, ort.t);
             }
 
             glEnd();
@@ -139,39 +105,34 @@ namespace stepan_plot {
 
         void init_display_mode() {
             glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-            glutInitWindowSize(fr.WIDTH, fr.HEIGHT);
-            glutInitWindowPosition(pos.X, pos.Y);
-            pos.X += fr.WIDTH; // Теперь окна не будут друг на друга накладываться, но что делать если их много \
-        Надо будет получать размер монитора ипроверять вмещаются ли в нем все графики
+            glutInitWindowSize(win_fr.w, win_fr.h);
+            glutInitWindowPosition(win_pos.X, win_pos.Y);
+            win_pos.next(win_fr);
         }
 
         void init() {
             glClearColor(1.0, 1.0, 1.0, 1.0);
 
-            ortho ort = get_this_ortho(plt[glutGetWindow()]);
+            df::Ortho ort = get_this_ortho(plt[glutGetWindow()]);
 
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
-            glOrtho(ort.left, ort.right, ort.bottom, ort.top, 0.0, 100.0);
+            glOrtho(ort.l, ort.r, ort.b, ort.t, ort.n, ort.f);
 
 //        pixels = (unsigned char*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);  // Выделение пиксилей
         }
 
-        ortho get_this_ortho(vector<plotInfo> vecPlt) {
+        df::Ortho get_this_ortho(vector<df::plot_frame> vecPlt) {
             vector<double> OX_left, OX_right, OX_bottom, OX_top;
             for (size_t i = 0; i < vecPlt.size(); i++) {
-                OX_left.push_back(vecPlt[i].ort_XOY.left);
-                OX_right.push_back(vecPlt[i].ort_XOY.right);
-                OX_bottom.push_back(vecPlt[i].ort_XOY.bottom);
-                OX_top.push_back(vecPlt[i].ort_XOY.top);
+                OX_left.push_back(vecPlt[i].ort_XOY.l);
+                OX_right.push_back(vecPlt[i].ort_XOY.r);
+                OX_bottom.push_back(vecPlt[i].ort_XOY.b);
+                OX_top.push_back(vecPlt[i].ort_XOY.t);
             }
 
-            ortho ort = {
-                    .left = af::min_elem(OX_left),
-                    .right = af::max_elem(OX_right),
-                    .bottom = af::min_elem(OX_bottom),
-                    .top = af::max_elem(OX_top)
-            };
+            df::Ortho ort(af::min_elem(OX_left), af::max_elem(OX_right),
+                          af::min_elem(OX_bottom), af::max_elem(OX_top));
 
             return ort;
         }
@@ -197,18 +158,8 @@ namespace stepan_plot {
                 return;  // Вывести ошибку
             }
 
-            ortho ort_OXY = {  // Переделать - внести в конструктор
-                    .left = af::min_elem(x),
-                    .right = af::max_elem(x),
-                    .bottom = af::min_elem(y),
-                    .top = af::max_elem(y)
-            };
-
-            plotInfo pl = {
-                    .name = plotName,
-                    .XOY = pair<vector<double>, vector<double>>(x, y),
-                    .ort_XOY = ort_OXY,
-            };
+            df::Ortho ort(x, y);
+            df::plot_frame pl(pair<vector<double>, vector<double>>(x, y), ort);
 
             if (!hold_status) {
                 currentWindow = initDisplay(pl, plotName);
@@ -222,7 +173,7 @@ namespace stepan_plot {
             }
         }
 
-        int initDisplay(plotInfo pl, const char *plotName) {
+        int initDisplay(df::plot_frame pl, const char *plotName) {
             init_display_mode();
             unsigned int cW = glutCreateWindow(plotName);
             plt[cW].push_back(pl);
