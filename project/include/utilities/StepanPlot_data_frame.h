@@ -132,6 +132,21 @@ namespace stepan_plot {
                : XOY(xoy), ort_XOY(ort), br(pb) {}
         };
 //------------------------------------------------------------------------------------------------------------
+        static Ortho get_this_ortho(std::vector<plot_frame> vecPlt) {
+            std::vector<double> OX_left, OX_right, OX_bottom, OX_top;
+            for (size_t i = 0; i < vecPlt.size(); i++) {
+                OX_left.push_back(vecPlt[i].ort_XOY.l);
+                OX_right.push_back(vecPlt[i].ort_XOY.r);
+                OX_bottom.push_back(vecPlt[i].ort_XOY.b);
+                OX_top.push_back(vecPlt[i].ort_XOY.t);
+            }
+
+            Ortho ort(af::min_elem(OX_left), af::max_elem(OX_right),
+                      af::min_elem(OX_bottom), af::max_elem(OX_top));
+
+            return ort;
+        }
+
     };
 
 };

@@ -17,7 +17,6 @@ using namespace std;
 // TODO: на 09.08
 //  1) lim-ы
 //  2) Возможность кисти, для пользователя
-//  3) Разбить класс на под блоки
 //  4) Начать коментировать, вынести в отдельное пространство имен
 
 // TODO: 5) Попробовать все сделать статическими, а не классом. Правда за чем?
@@ -84,14 +83,15 @@ namespace stepan_plot {
         }
 
         void grid() {
-            df::Ortho ort = get_this_ortho(plt[glutGetWindow()]);
+            const unsigned int number_of_cells = 10;
+            df::Ortho ort = df::get_this_ortho(plt[glutGetWindow()]);
             glColor3f(0.9, 0.9, 0.9);  // Вынести в константу это
             glBegin(GL_LINES);
-            for (double dy = ort.b, shag = (ort.t - ort.b) / 10; dy <= ort.t; dy += shag) {  // Вынести в константу коэффицент с клетками
+            for (double dy = ort.b, shag = (ort.t - ort.b) / number_of_cells; dy <= ort.t; dy += shag) {
                 glVertex2d(ort.l, dy);
                 glVertex2d(ort.r, dy);
             }
-            for (double dx = ort.l, shag = (ort.r - ort.l) / 10; dx <= ort.r; dx += shag) {
+            for (double dx = ort.l, shag = (ort.r - ort.l) / number_of_cells; dx <= ort.r; dx += shag) {
                 glVertex2d(dx, ort.b);
                 glVertex2d(dx, ort.t);
             }
@@ -113,7 +113,7 @@ namespace stepan_plot {
         void init() {
             glClearColor(1.0, 1.0, 1.0, 1.0);
 
-            df::Ortho ort = get_this_ortho(plt[glutGetWindow()]);
+            df::Ortho ort = df::get_this_ortho(plt[glutGetWindow()]);
 
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
@@ -122,20 +122,20 @@ namespace stepan_plot {
 //        pixels = (unsigned char*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);  // Выделение пиксилей
         }
 
-        df::Ortho get_this_ortho(vector<df::plot_frame> vecPlt) {
-            vector<double> OX_left, OX_right, OX_bottom, OX_top;
-            for (size_t i = 0; i < vecPlt.size(); i++) {
-                OX_left.push_back(vecPlt[i].ort_XOY.l);
-                OX_right.push_back(vecPlt[i].ort_XOY.r);
-                OX_bottom.push_back(vecPlt[i].ort_XOY.b);
-                OX_top.push_back(vecPlt[i].ort_XOY.t);
-            }
-
-            df::Ortho ort(af::min_elem(OX_left), af::max_elem(OX_right),
-                          af::min_elem(OX_bottom), af::max_elem(OX_top));
-
-            return ort;
-        }
+//        df::Ortho get_this_ortho(vector<df::plot_frame> vecPlt) {
+//            vector<double> OX_left, OX_right, OX_bottom, OX_top;
+//            for (size_t i = 0; i < vecPlt.size(); i++) {
+//                OX_left.push_back(vecPlt[i].ort_XOY.l);
+//                OX_right.push_back(vecPlt[i].ort_XOY.r);
+//                OX_bottom.push_back(vecPlt[i].ort_XOY.b);
+//                OX_top.push_back(vecPlt[i].ort_XOY.t);
+//            }
+//
+//            df::Ortho ort(af::min_elem(OX_left), af::max_elem(OX_right),
+//                          af::min_elem(OX_bottom), af::max_elem(OX_top));
+//
+//            return ort;
+//        }
 
         void hold(bool status) {
             hold_status = status;

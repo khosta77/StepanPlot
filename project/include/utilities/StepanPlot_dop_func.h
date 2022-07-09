@@ -53,10 +53,11 @@ namespace stepan_plot {
 
                 return min;
             }
-//------------------------------------------------------------------------------------------------------------
+
         };
 
     };
+
     using af = additional_functions::additional_func;
 
 };
