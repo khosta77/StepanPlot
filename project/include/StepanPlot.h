@@ -8,6 +8,8 @@
 #include <vector>
 #include <map>
 
+#include "./utilities/StepanPlot_dop_func.h"
+
 using namespace std;
 
 // TODO: на 09.08
@@ -21,9 +23,6 @@ using namespace std;
 /* Нельзя просто так взять и сделать вывод текста */
 
 namespace stepan_plot {
-    static double DoubleRand(double _max, double _min) {
-        return _min + double(rand()) / RAND_MAX * (_max - _min);
-    }
 
     class StepanPlot;
 
@@ -36,9 +35,6 @@ namespace stepan_plot {
 
         int currentWindow;
 
-        vector <pair<vector < double>, vector<double>>>
-        df;
-        vector<int> window;
         const GLuint FORMAT_NBYTES = 4;
 
         struct frame {  // Рамка
@@ -66,13 +62,11 @@ namespace stepan_plot {
             double g;
 
             brush() {
-                r = DoubleRand(1.0, 0.0);
-                b = DoubleRand(1.0, 0.0);
-                g = DoubleRand(1.0, 0.0);
+                r = af::rand_factor(1.0, 0.0);
+                b = af::rand_factor(1.0, 0.0);
+                g = af::rand_factor(1.0, 0.0);
             }
         };
-
-//    vector<ortho> ort;
 
         struct plotInfo {
             string name;
@@ -83,37 +77,6 @@ namespace stepan_plot {
         };
 
         map<int, vector<plotInfo>> plt;
-
-    private:
-        double max(vector<double> O) {
-            if (O.empty()) {
-                return 0;
-            }
-
-            double max = O[0];
-            for (size_t i = 0; i < O.size(); i++) {
-                if (O[i] > max) {
-                    max = O[i];
-                }
-            }
-
-            return max;
-        }
-
-        double min(vector<double> O) {
-            if (O.empty()) {
-                return 0;
-            }
-
-            double min = O[0];
-            for (size_t i = 0; i < O.size(); i++) {
-                if (O[i] < min) {
-                    min = O[i];
-                }
-            }
-
-            return min;
-        }
 
     public:
         StepanPlot(int argc, char **argv) {
@@ -185,21 +148,7 @@ namespace stepan_plot {
         void init() {
             glClearColor(1.0, 1.0, 1.0, 1.0);
 
-            // Выделить это в отдельную переменную
-            vector<double> OX_left, OX_right, OX_bottom, OX_top;
-            for (size_t i = 0; i < plt[glutGetWindow()].size(); i++) {
-                OX_left.push_back(plt[glutGetWindow()][i].ort_XOY.left);
-                OX_right.push_back(plt[glutGetWindow()][i].ort_XOY.right);
-                OX_bottom.push_back(plt[glutGetWindow()][i].ort_XOY.bottom);
-                OX_top.push_back(plt[glutGetWindow()][i].ort_XOY.top);
-            }
-
-            ortho ort = {
-                    .left = min(OX_left),
-                    .right = max(OX_right),
-                    .bottom = min(OX_bottom),
-                    .top = max(OX_top)
-            };
+            ortho ort = get_this_ortho(plt[glutGetWindow()]);
 
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
@@ -208,8 +157,7 @@ namespace stepan_plot {
 //        pixels = (unsigned char*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);  // Выделение пиксилей
         }
 
-        ortho get_this_ortho(vector <plotInfo> vecPlt) {
-            // Выделить это в отдельную переменную
+        ortho get_this_ortho(vector<plotInfo> vecPlt) {
             vector<double> OX_left, OX_right, OX_bottom, OX_top;
             for (size_t i = 0; i < vecPlt.size(); i++) {
                 OX_left.push_back(vecPlt[i].ort_XOY.left);
@@ -219,10 +167,10 @@ namespace stepan_plot {
             }
 
             ortho ort = {
-                    .left = min(OX_left),
-                    .right = max(OX_right),
-                    .bottom = min(OX_bottom),
-                    .top = max(OX_top)
+                    .left = af::min_elem(OX_left),
+                    .right = af::max_elem(OX_right),
+                    .bottom = af::min_elem(OX_bottom),
+                    .top = af::max_elem(OX_top)
             };
 
             return ort;
@@ -249,16 +197,16 @@ namespace stepan_plot {
                 return;  // Вывести ошибку
             }
 
-            ortho ort_OXY = {
-                    .left = min(x),
-                    .right = max(x),
-                    .bottom = min(y),
-                    .top = max(y)
+            ortho ort_OXY = {  // Переделать - внести в конструктор
+                    .left = af::min_elem(x),
+                    .right = af::max_elem(x),
+                    .bottom = af::min_elem(y),
+                    .top = af::max_elem(y)
             };
 
             plotInfo pl = {
                     .name = plotName,
-                    .XOY = pair < vector < double >, vector < double >> (x, y),
+                    .XOY = pair<vector<double>, vector<double>>(x, y),
                     .ort_XOY = ort_OXY,
             };
 
