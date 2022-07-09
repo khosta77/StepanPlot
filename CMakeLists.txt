@@ -4,7 +4,11 @@ project(main)
 set(CMAKE_CXX_STANDARD 17)
 
 add_executable(main
-        ./main.cpp
+        ./project/src/main.cpp
+        ./project/include/StepanPlot.h
+        ./project/include/utilities/StepanPlot_dop_func.h
+        ./project/include/utilities/StepanPlot_data_frame.h
+        ./project/include/utilities/StepanPlot_exception.h
         )
 
 #openGL
