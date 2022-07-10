@@ -1,6 +1,8 @@
 #ifndef PLOT_TEST_STEPANPLOT_EXCEPTION_H
 #define PLOT_TEST_STEPANPLOT_EXCEPTION_H
 
+#include <GL/freeglut.h>
+
 #include <exception>
 #include <iostream>
 #include <string>
@@ -11,8 +13,11 @@ namespace stepan_plot {
 
     namespace MyException {
 
+        /** \class - Вывод ошибки
+         * */
         class Exception : public std::exception {
-            std::string error;
+
+            std::string error;  /* Текст с ошибкой */
 
         public:
             Exception(const std::string& msg) : error(msg) {}
@@ -23,9 +28,10 @@ namespace stepan_plot {
 
         };
 
-    };
+    };  // MyException
+
     using namespace MyException;
 
-}
+};  // stepan_plot
 
 #endif //PLOT_TEST_STEPANPLOT_EXCEPTION_H

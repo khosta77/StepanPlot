@@ -53,12 +53,13 @@ namespace stepan_plot {
 
                 return min;
             }
-//------------------------------------------------------------------------------------------------------------
+
         };
 
-    };
+    };  // additional_functions
+
     using af = additional_functions::additional_func;
 
-};
+};  // stepan_plot
 
 #endif //PLOT_TEST_STEPANPLOT_DOP_FUNC_H
