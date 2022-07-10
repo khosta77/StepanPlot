@@ -2,7 +2,7 @@
 
 *header-only* библиотека для построения графика из программы. 
 
-![](project/img/plot.jpg)
+![](project/img/plot.png)
 
 ### Особенности
 
