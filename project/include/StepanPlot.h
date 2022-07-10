@@ -7,6 +7,7 @@
 #include <functional>
 #include <vector>
 #include <map>
+#include <string>
 
 #include "./utilities/StepanPlot_dop_func.h"
 #include "./utilities/StepanPlot_data_frame.h"
@@ -15,7 +16,6 @@
 using namespace std;
 
 // TODO: на 10.08
-//  2) Возможность кисти, для пользователя
 //  3) Добавить комментарии ко всем функциям/методам
 //  4) Начать собирать проект (добавить проверки на подключенные библиотеки, блоки try, catch и т д)
 
@@ -29,10 +29,12 @@ namespace stepan_plot {
 
     class StepanPlot {
     private:
+        unsigned int plot_size = 0;
+
         bool hold_status = false;
         bool first_plot = false;
 
-        int currentWindow;
+        int currentWindow = 0;
 
         const GLuint FORMAT_NBYTES = 4;
 
@@ -40,23 +42,6 @@ namespace stepan_plot {
         df::Position win_pos;
 
         map<int, vector<df::plot_frame>> plt;
-
-    public:
-        StepanPlot() {
-            try {
-                throw Exception("---> В конструктор необходимо передать argc и argv\n");
-            } catch(Exception& e) {
-                std::cout << e.what() << std::endl;
-            }
-        }
-
-        StepanPlot(int argc, char **argv) {
-            glutInit(&argc, argv);
-            glutSetOption(
-                    GLUT_ACTION_ON_WINDOW_CLOSE,
-                    GLUT_ACTION_CONTINUE_EXECUTION);
-            currentWindow = 0;
-        }
 
         void draw() {
             if (plt.empty()) {
@@ -107,10 +92,6 @@ namespace stepan_plot {
             glEnd();
         }
 
-        static void display() {
-            currentInstance->draw();
-        }
-
         void init_display_mode() {
             glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
             glutInitWindowSize(win_fr.w, win_fr.h);
@@ -130,6 +111,63 @@ namespace stepan_plot {
 //        pixels = (unsigned char*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);  // Выделение пиксилей
         }
 
+        static void display() {
+            currentInstance->draw();
+        }
+
+        int initDisplay(df::plot_frame pl, std::string plotName) {
+            init_display_mode();
+            unsigned int cW = glutCreateWindow(plotName.c_str());
+            plt[cW].push_back(pl);
+            currentInstance = this;
+            glutDisplayFunc(StepanPlot::display);
+            return cW;
+        }
+
+    public:
+        StepanPlot() {
+            try {
+                throw Exception("---> В конструктор необходимо передать argc и argv\n");
+            } catch(Exception& e) {
+                std::cout << e.what() << std::endl;
+            }
+        }
+
+        StepanPlot(int argc, char **argv) {
+            glutInit(&argc, argv);
+            glutSetOption(
+                    GLUT_ACTION_ON_WINDOW_CLOSE,
+                    GLUT_ACTION_CONTINUE_EXECUTION);
+        }
+
+        void plot(std::vector<double> x, std::vector<double> y, std::string plotName, df::Brush br) {
+            ++plot_size;
+
+            df::Ortho ort(x, y);
+            df::plot_frame pl(pair<vector<double>, vector<double>>(x, y), ort, br);
+
+            if (!hold_status) {
+                currentWindow = initDisplay(pl, plotName);
+            } else {
+                if (plt.empty()) {
+                    currentWindow = initDisplay(pl, plotName);
+                } else {
+                    plt[currentWindow].push_back(pl);
+                }
+            }
+
+            init();
+        }
+
+        void plot(std::vector<double> x, std::vector<double> y, std::string plotName) {
+            ++plot_size;
+            plot(x, y, plotName, df::Brush());
+        }
+
+        void plot(std::vector<double> x, std::vector<double> y) {
+            plot(x, y, "plot " + std::to_string(++plot_size), df::Brush());
+        }
+
         void hold(bool status) {
             hold_status = status;
         }
@@ -146,34 +184,16 @@ namespace stepan_plot {
             plt[currentWindow][0].grid_status = status;
         }
 
-        void plot(std::vector<double> x, std::vector<double> y, const char *plotName) {
-            if (x.empty() || y.empty()) {
-                return;  // Вывести ошибку
+        void brush(df::Brush br) {
+            if (currentWindow == 0) {
+                return;
             }
 
-            df::Ortho ort(x, y);
-            df::plot_frame pl(pair<vector<double>, vector<double>>(x, y), ort);
-
-            if (!hold_status) {
-                currentWindow = initDisplay(pl, plotName);
-            } else {
-                if (plt.empty()) {
-                    currentWindow = initDisplay(pl, plotName);
-                } else {
-                    plt[currentWindow].push_back(pl);
-                }
+            if (plt[currentWindow].empty()) {
+                return;
             }
 
-            init();
-        }
-
-        int initDisplay(df::plot_frame pl, const char *plotName) {
-            init_display_mode();
-            unsigned int cW = glutCreateWindow(plotName);
-            plt[cW].push_back(pl);
-            currentInstance = this;
-            glutDisplayFunc(StepanPlot::display);
-            return cW;
+            plt[currentWindow][plt[currentWindow].size() - 1].br = br;
         }
 
         void xlim(double left, double right) {
@@ -209,12 +229,6 @@ namespace stepan_plot {
                 std::cout << e.what() << std::endl;
             }
         }
-
-//    void plot(vector<double> x, vector<double> y) {
-//        window.push_back(glutCreateWindow("Test"));
-//        glutDisplayFunc(StepanPlot::display);
-//        init();
-//    }
 //------------------------------------------------------------------------------------------------------------
         GLubyte *pixels = nullptr;  /**< Необходимо для создания файлов изображений */
 
