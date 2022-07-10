@@ -1,6 +1,8 @@
 #ifndef PLOT_TEST_STEPANPLOT_EXCEPTION_H
 #define PLOT_TEST_STEPANPLOT_EXCEPTION_H
 
+#include <GL/freeglut.h>
+
 #include <exception>
 #include <iostream>
 #include <string>
@@ -24,6 +26,7 @@ namespace stepan_plot {
         };
 
     };
+
     using namespace MyException;
 
 }

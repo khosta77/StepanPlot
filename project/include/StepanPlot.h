@@ -1,13 +1,12 @@
 #ifndef PLOT_TEST_STEPANPLOT_H
 #define PLOT_TEST_STEPANPLOT_H
 
-#include <GL/freeglut.h>
-#include <cmath>
-#include <iostream>
-#include <functional>
-#include <vector>
-#include <map>
-#include <string>
+//#include <GL/freeglut.h>
+//#include <iostream>
+//#include <functional>
+//#include <vector>
+//#include <map>
+//#include <string>
 
 #include "./utilities/StepanPlot_dop_func.h"
 #include "./utilities/StepanPlot_data_frame.h"
@@ -35,8 +34,6 @@ namespace stepan_plot {
         bool first_plot = false;
 
         int currentWindow = 0;
-
-        const GLuint FORMAT_NBYTES = 4;
 
         df::Frame win_fr;
         df::Position win_pos;
@@ -68,9 +65,6 @@ namespace stepan_plot {
             }
             glEnd();
             glFlush();
-
-//        screenshot_ppm("tmp", (uint32_t)WIDTH, (uint32_t)HEIGHT, &pixels);  // \
-        вводим команду чтобы сделать скриншот
         }
 
         void grid() {
@@ -107,8 +101,6 @@ namespace stepan_plot {
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
             glOrtho(ort.l, ort.r, ort.b, ort.t, ort.n, ort.f);
-
-//        pixels = (unsigned char*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);  // Выделение пиксилей
         }
 
         static void display() {
@@ -141,8 +133,6 @@ namespace stepan_plot {
         }
 
         void plot(std::vector<double> x, std::vector<double> y, std::string plotName, df::Brush br) {
-            ++plot_size;
-
             df::Ortho ort(x, y);
             df::plot_frame pl(pair<vector<double>, vector<double>>(x, y), ort, br);
 
@@ -160,7 +150,6 @@ namespace stepan_plot {
         }
 
         void plot(std::vector<double> x, std::vector<double> y, std::string plotName) {
-            ++plot_size;
             plot(x, y, plotName, df::Brush());
         }
 
@@ -229,40 +218,7 @@ namespace stepan_plot {
                 std::cout << e.what() << std::endl;
             }
         }
-//------------------------------------------------------------------------------------------------------------
-        GLubyte *pixels = nullptr;  /**< Необходимо для создания файлов изображений */
 
-
-        /**  \brief - Делает скриншот окна, Последнегео открытого окна.
-         * \param - имя файла
-         * \param - ширина
-         * \param - высота
-         * \param - ???
-         * */
-        void screenshot_ppm(
-                const char *filename,
-                const uint32_t width,
-                const uint32_t height,
-                GLubyte **img_pixels) {
-            size_t i, j, cur;
-            const size_t format_nchannels = 3;
-            FILE *f = fopen(filename, "w");
-            fprintf(f, "P3\n%d %d\n%d\n", width, height, 255);
-            *img_pixels = (GLubyte *) realloc(*img_pixels,
-                                              format_nchannels * sizeof(GLubyte) * width * height);
-            glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, *img_pixels);
-            for (i = 0; i < height; i++) {
-                for (j = 0; j < width; j++) {
-                    cur = format_nchannels * ((height - i - 1) * width + j);
-                    fprintf(f, "%3d %3d %3d ", (*img_pixels)[cur], (*img_pixels)[cur + 1],
-                            (*img_pixels)[cur + 2]);
-                }
-                fprintf(f, "\n");
-            }
-            fclose(f);
-        }
-
-//------------------------------------------------------------------------------------------------------------
         void call() {
             glutMainLoop();
         }
