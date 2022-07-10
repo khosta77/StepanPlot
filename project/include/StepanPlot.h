@@ -15,7 +15,6 @@
 using namespace std;
 
 // TODO: на 10.08
-//  1) lim-ы
 //  2) Возможность кисти, для пользователя
 //  3) Добавить комментарии ко всем функциям/методам
 //  4) Начать собирать проект (добавить проверки на подключенные библиотеки, блоки try, catch и т д)
@@ -43,6 +42,14 @@ namespace stepan_plot {
         map<int, vector<df::plot_frame>> plt;
 
     public:
+        StepanPlot() {
+            try {
+                throw Exception("---> В конструктор необходимо передать argc и argv\n");
+            } catch(Exception& e) {
+                std::cout << e.what() << std::endl;
+            }
+        }
+
         StepanPlot(int argc, char **argv) {
             glutInit(&argc, argv);
             glutSetOption(
@@ -83,7 +90,9 @@ namespace stepan_plot {
 
         void grid() {
             const unsigned int number_of_cells = 10;
-            df::Ortho ort = df::get_this_ortho(plt[glutGetWindow()]);
+
+            df::Ortho ort = df::get_ortho(plt[glutGetWindow()]);
+
             glColor3f(0.9, 0.9, 0.9);  // Вынести в константу это
             glBegin(GL_LINES);
             for (double dy = ort.b, shag = (ort.t - ort.b) / number_of_cells; dy <= ort.t; dy += shag) {
@@ -110,9 +119,9 @@ namespace stepan_plot {
         }
 
         void init() {
-            glClearColor(1.0, 1.0, 1.0, 1.0);
+            glClearColor(1.0, 1.0, 1.0, 1.0);  // Вынести в константы
 
-            df::Ortho ort = df::get_this_ortho(plt[glutGetWindow()]);
+            df::Ortho ort = df::get_ortho(plt[glutGetWindow()]);
 
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
@@ -120,21 +129,6 @@ namespace stepan_plot {
 
 //        pixels = (unsigned char*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);  // Выделение пиксилей
         }
-
-//        df::Ortho get_this_ortho(vector<df::plot_frame> vecPlt) {
-//            vector<double> OX_left, OX_right, OX_bottom, OX_top;
-//            for (size_t i = 0; i < vecPlt.size(); i++) {
-//                OX_left.push_back(vecPlt[i].ort_XOY.l);
-//                OX_right.push_back(vecPlt[i].ort_XOY.r);
-//                OX_bottom.push_back(vecPlt[i].ort_XOY.b);
-//                OX_top.push_back(vecPlt[i].ort_XOY.t);
-//            }
-//
-//            df::Ortho ort(af::min_elem(OX_left), af::max_elem(OX_right),
-//                          af::min_elem(OX_bottom), af::max_elem(OX_top));
-//
-//            return ort;
-//        }
 
         void hold(bool status) {
             hold_status = status;
@@ -152,7 +146,7 @@ namespace stepan_plot {
             plt[currentWindow][0].grid_status = status;
         }
 
-        void plot(vector<double> x, vector<double> y, const char *plotName) {
+        void plot(std::vector<double> x, std::vector<double> y, const char *plotName) {
             if (x.empty() || y.empty()) {
                 return;  // Вывести ошибку
             }
@@ -167,9 +161,10 @@ namespace stepan_plot {
                     currentWindow = initDisplay(pl, plotName);
                 } else {
                     plt[currentWindow].push_back(pl);
-                    init();
                 }
             }
+
+            init();
         }
 
         int initDisplay(df::plot_frame pl, const char *plotName) {
@@ -178,8 +173,41 @@ namespace stepan_plot {
             plt[cW].push_back(pl);
             currentInstance = this;
             glutDisplayFunc(StepanPlot::display);
-            init();
             return cW;
+        }
+
+        void xlim(double left, double right) {
+            try {
+                if (currentWindow == 0) {
+                    throw Exception("---> Не существует окна\n");
+                }
+
+                if(plt[currentWindow].empty()) {
+                    throw Exception("---> ??? график не создан\n");
+                }
+
+                plt[currentWindow][0].ul.x_lim(left, right);
+                init();
+            } catch(Exception& e) {
+                std::cout << e.what() << std::endl;
+            }
+        }
+
+        void ylim(double bottom, double top) {
+            try {
+                if (currentWindow == 0) {
+                    throw Exception("---> Не существует окна\n");
+                }
+
+                if(plt[currentWindow].empty()) {
+                    throw Exception("---> ??? график не создан\n");
+                }
+
+                plt[currentWindow][0].ul.y_lim(bottom, top);
+                init();
+            } catch(Exception& e) {
+                std::cout << e.what() << std::endl;
+            }
         }
 
 //    void plot(vector<double> x, vector<double> y) {

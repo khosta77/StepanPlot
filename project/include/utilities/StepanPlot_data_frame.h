@@ -118,6 +118,44 @@ namespace stepan_plot {
             Brush(double red, double blue, double green) : r(red), b(blue), g(green) {}
         };
 //------------------------------------------------------------------------------------------------------------
+        class User_lim {
+        public:
+            bool X_lim = false;
+            bool Y_lim = false;
+
+            Ortho lim;
+
+            User_lim() {}
+
+            void x_lim(double left_x, double right_x) {
+                try {
+                    if (right_x < left_x) {
+                        throw Exception("---> lim X right < left\n");
+                    }
+
+                    lim.l = left_x;
+                    lim.r = right_x;
+                    X_lim = true;
+                } catch(Exception& e) {
+                    std::cout << e.what() << std::endl;
+                }
+            }
+
+            void y_lim(double bottom_y, double top_y) {
+                try {
+                    if (top_y < bottom_y) {
+                        throw Exception("---> lim Y right < left\n");
+                    }
+
+                    lim.b = bottom_y;
+                    lim.t = top_y;
+                    Y_lim = true;
+                } catch(Exception& e) {
+                    std::cout << e.what() << std::endl;
+                }
+            }
+        };
+//------------------------------------------------------------------------------------------------------------
         class plot_frame {
         public:
 //            std::string name;  |* Имя графика *|
@@ -125,6 +163,7 @@ namespace stepan_plot {
             Ortho ort_XOY;  /* Рамка для каждого графика */
             Brush br;  /* Цвет линии */
             bool grid_status = false;  /* Сетка графика */
+            User_lim ul;  /* пределы */
 
             plot_frame() {}
 
@@ -143,6 +182,27 @@ namespace stepan_plot {
 
             Ortho ort(af::min_elem(OX_left), af::max_elem(OX_right),
                       af::min_elem(OX_bottom), af::max_elem(OX_top));
+
+            return ort;
+        }
+
+        static Ortho get_ortho(std::vector<plot_frame> vecPlt) {
+            User_lim lim = vecPlt[0].ul;
+            Ortho ort;
+
+            if (lim.X_lim && lim.Y_lim) {
+                ort = lim.lim;
+            } else if (lim.X_lim && !lim.Y_lim) {
+                ort = get_this_ortho(vecPlt);
+                ort.r = lim.lim.r;
+                ort.l = lim.lim.l;
+            } else if (!lim.X_lim && lim.Y_lim) {
+                ort = get_this_ortho(vecPlt);
+                ort.b = lim.lim.b;
+                ort.t = lim.lim.t;
+            } else {
+                ort = get_this_ortho(vecPlt);
+            }
 
             return ort;
         }
