@@ -29,9 +29,12 @@ int main(int argc, char** argv) {
 
     StepanPlot test(argc, argv);
     test.plot(X, Y1, "cos");
-    test.grid(true);
+//    test.grid(true);
 //    test.hold(true);
     test.plot(X, Y2, "sin");
+    test.xlim(0, 100);
+    test.ylim(0, 1);
+    test.grid(true);
 //    test.grid(false);
 ////    test.plot(X, Y1, "cos");
 //    test.hold(true);
