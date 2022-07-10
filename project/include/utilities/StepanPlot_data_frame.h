@@ -6,8 +6,8 @@
 namespace stepan_plot {
 
     namespace df {  // data frame
-//------------------------------------------------------------------------------------------------------------
-        /**\brief - класс рамка
+//============================================================================================================
+        /**\class - класс рамка
          * */
         class Frame {
         public:
@@ -24,8 +24,8 @@ namespace stepan_plot {
              */
             Frame(unsigned int height, unsigned int width) : h(height), w(width) {}
         };
-//------------------------------------------------------------------------------------------------------------
-        /**\brief - класс позиции нового окна
+//============================================================================================================
+        /**\class - класс позиции нового окна
          * */
         class Position {
         private:
@@ -37,16 +37,17 @@ namespace stepan_plot {
             unsigned int X = 0;  /* Положение по Х */
             unsigned int Y = 0;  /* Положение по У */
 
-            /** \brief Инициализация параметров рамки по умолчанию
+            /** \brief - Инициализация параметров рамки по умолчанию
              * */
             Position() {}
 
-            /** \brief Инициализация параметров рамки
+            /** \brief - Инициализация параметров рамки
              * \param x смещение по х
              * \param y смещение по y
              */
             Position(unsigned int x, unsigned int y) : X(x), Y(y) {}
 
+//------------------------------------------------------------------------------------------------------------
             /** \brief Переход к следующему положению
              * \param fr рамка
              */
@@ -66,23 +67,37 @@ namespace stepan_plot {
                 Y = 0;
             }
         };
-//------------------------------------------------------------------------------------------------------------
-        /** \brief Характеристики окна в котором строим график
+//============================================================================================================
+        /** \class - Характеристики окна в котором строим график
          * */
         class Ortho {
         public:
-            double l;
-            double r;
-            double b;
-            double t;
-            double n = 0.0;
-            double f = 100.0;
+            double l;          /* left */
+            double r;          /* right */
+            double b;          /* bottom */
+            double t;          /* top */
+            double n = 0.0;    /* near */
+            double f = 100.0;  /* far */
 
+            /** \brief Инициализация параметров рамки в окне по умолчанию
+             * */
             Ortho() {}
 
+            /** \brief - Инициализация параметров рамки в окне
+             * \param left - по оси Х
+             * \param right - по оси Х
+             * \param bottom - по оси У
+             * \param top - по оси У
+             * \param near - настройки gl
+             * \param far - настройки gl
+             * */
             Ortho(double left, double right, double bottom, double top, double near = 0.0, double far = 100.0)
                : l(left), r(right), b(bottom), t(top), n(near), f(far) {}
-
+//------------------------------------------------------------------------------------------------------------
+            /** \brief - Инициализация параметров рамки в окне через векторы
+             * \param X - по оси Х
+             * \param Y - по оси У
+             * */
             Ortho(std::vector<double> X, std::vector<double> Y) {
                 try {
                     if (X.empty() || Y.empty()) {
@@ -102,31 +117,61 @@ namespace stepan_plot {
                 t = af::max_elem(Y);
             }
         };
-//------------------------------------------------------------------------------------------------------------
+//============================================================================================================
+        /** \class - Кисть
+         * */
         class Brush {
         public:
             double r;
             double b;
             double g;
+            double a = 1.0;
 
+            /** \brief - По умолчанию случайные значения
+             * */
             Brush() {
                 r = af::rand_factor(1.0, 0.0);
                 b = af::rand_factor(1.0, 0.0);
                 g = af::rand_factor(1.0, 0.0);
             }
 
+            /** \brief - Если нам нужны определенные значения
+             * \param red
+             * \param blue
+             * \param green
+             * */
             Brush(double red, double blue, double green) : r(red), b(blue), g(green) {}
+
+            /** \brief - Если нам нужны определенные значения
+             * \param red
+             * \param blue
+             * \param green
+             * \param alpha
+             * */
+            Brush(double red, double blue, double green, double alpha) : r(red), b(blue), g(green), a(alpha) {}
         };
-//------------------------------------------------------------------------------------------------------------
+
+        Brush grid_color(0.9, 0.9, 0.9);  /* Цвет сетки */
+
+        Brush background(1.0, 1.0, 1.0, 1.0);  /* Цвет фона */
+//============================================================================================================
+        /** \class - Пределы пользователя
+         * */
         class User_lim {
         public:
-            bool X_lim = false;
-            bool Y_lim = false;
+            bool X_lim = false;  /* Существования предела по Х */
+            bool Y_lim = false;  /* Существования предела по У */
 
-            Ortho lim;
+            Ortho lim;  /* Кординаты */
 
+            /** \brief - По умолчанию ничего
+             * */
             User_lim() {}
-
+//------------------------------------------------------------------------------------------------------------
+            /** \brief - поставить ограничение по Х
+             * \param left_x - ограничение слева
+             * \param right_x - ограничение справа
+             * */
             void x_lim(double left_x, double right_x) {
                 try {
                     if (right_x < left_x) {
@@ -140,7 +185,11 @@ namespace stepan_plot {
                     std::cout << e.what() << std::endl;
                 }
             }
-
+//------------------------------------------------------------------------------------------------------------
+            /** \brief - поставить ограничение по У
+             * \param bottom_y - ограничение снизу
+             * \param top_y - ограничение сверху
+             * */
             void y_lim(double bottom_y, double top_y) {
                 try {
                     if (top_y < bottom_y) {
@@ -155,7 +204,9 @@ namespace stepan_plot {
                 }
             }
         };
-//------------------------------------------------------------------------------------------------------------
+//============================================================================================================
+        /** \class - Один график, хранит в себе всю информацию
+         * */
         class plot_frame {
         public:
 //            std::string name;  |* Имя графика *|
@@ -165,12 +216,22 @@ namespace stepan_plot {
             bool grid_status = false;  /* Сетка графика */
             User_lim ul;  /* пределы */
 
+            /** \brief - По умолчанию ничего
+             * */
             plot_frame() {}
-
+//------------------------------------------------------------------------------------------------------------
+            /** \brief - Задание параметров
+             * \param xoy - график
+             * \param ort - орты
+             * \param pb - кисть
+             * */
             plot_frame(std::pair<std::vector<double>, std::vector<double>> xoy, Ortho ort, Brush pb = Brush())
                : XOY(xoy), ort_XOY(ort), br(pb) {}
         };
-//------------------------------------------------------------------------------------------------------------
+//============================================================================================================
+        /** \brief - Получить из массива лучшие данные
+         * \param vecPlt - данные
+         * */
         static Ortho get_this_ortho(std::vector<plot_frame> vecPlt) {
             std::vector<double> OX_left, OX_right, OX_bottom, OX_top;
             for (size_t i = 0; i < vecPlt.size(); i++) {
@@ -185,7 +246,10 @@ namespace stepan_plot {
 
             return ort;
         }
-
+//------------------------------------------------------------------------------------------------------------
+        /** \brief - Получить из массива лучшие данные, с учетом пределов
+         * \param vecPlt - данные
+         * */
         static Ortho get_ortho(std::vector<plot_frame> vecPlt) {
             User_lim lim = vecPlt[0].ul;
             Ortho ort;
@@ -207,8 +271,8 @@ namespace stepan_plot {
             return ort;
         }
 
-    };
+    };  // df
 
-};
+};  // stepan_plot
 
 #endif // PLOT_TEST_STEPANPLOT_DATA_FRAME_H

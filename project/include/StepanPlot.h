@@ -1,45 +1,36 @@
 #ifndef PLOT_TEST_STEPANPLOT_H
 #define PLOT_TEST_STEPANPLOT_H
 
-//#include <GL/freeglut.h>
-//#include <iostream>
-//#include <functional>
-//#include <vector>
-//#include <map>
-//#include <string>
-
 #include "./utilities/StepanPlot_dop_func.h"
 #include "./utilities/StepanPlot_data_frame.h"
 #include "./utilities/StepanPlot_exception.h"
 
-using namespace std;
-
-// TODO: на 10.08
-//  3) Добавить комментарии ко всем функциям/методам
-//  4) Начать собирать проект (добавить проверки на подключенные библиотеки, блоки try, catch и т д)
-
-/* Нельзя просто так взять и сделать вывод текста */
-
 namespace stepan_plot {
+
+    using namespace std;
 
     class StepanPlot;
 
-    static StepanPlot *currentInstance;
-
+    static StepanPlot *currentInstance;  /* Статический объект класса необходим для вызова \
+                                                                                   метода draw() из класса */
+    /** \class - Для построения графиков
+     * */
     class StepanPlot {
     private:
-        unsigned int plot_size = 0;
+        unsigned int plot_size = 0;  /* Колличество не подписанных графиков */
 
-        bool hold_status = false;
-        bool first_plot = false;
+        bool hold_status = false;  /* Статус отрисовки на одном окне графиков */
+        bool first_plot = false;  /* В некоторых моментах важно уточнить есть уже графики или нет */
 
-        int currentWindow = 0;
+        int currentWindow = 0;  /* Текущее окно, используется если добовляем новые графики на одно окно */
 
-        df::Frame win_fr;
-        df::Position win_pos;
+        df::Frame win_fr;  /* Характеристики рамки, идейно пользователь не должен ее редактировать */
+        df::Position win_pos;  /* Позиция новых окон */
 
-        map<int, vector<df::plot_frame>> plt;
-
+        std::map<int, vector<df::plot_frame>> plt;  /* Окно с графиком */
+//------------------------------------------------------------------------------------------------------------
+        /** \brief - метод отрисовки графика/ов в окне
+         * */
         void draw() {
             if (plt.empty()) {
                 return;
@@ -48,14 +39,14 @@ namespace stepan_plot {
             int win = glutGetWindow();
             glClear(GL_COLOR_BUFFER_BIT);
 
-            if (plt[win][0].grid_status) {
+            if (plt[win][0].grid_status) {  // Информация о отрисовывки хранится в 1-ой ячейки
                 grid();
             }
 
             glBegin(GL_POINTS);
             for (size_t st = 0; st < plt[win].size(); st++) {
                 glColor3f(plt[win][st].br.r, plt[win][st].br.g, plt[win][st].br.b);
-                glLineWidth(0);
+
                 for (double i = 1; i < plt[win][st].XOY.first.size(); i++) {
                     glVertex2d(plt[win][st].XOY.first[i - 1],
                                plt[win][st].XOY.second[i - 1]);
@@ -64,16 +55,20 @@ namespace stepan_plot {
                 }
             }
             glEnd();
+
             glFlush();
         }
-
+//------------------------------------------------------------------------------------------------------------
+        /** \brief - метод отрисовки сетки, вызывается из метода draw()
+         * */
         void grid() {
-            const unsigned int number_of_cells = 10;
+            const unsigned int number_of_cells = 10;  // Колличество клеток в одной строке
 
             df::Ortho ort = df::get_ortho(plt[glutGetWindow()]);
 
-            glColor3f(0.9, 0.9, 0.9);  // Вынести в константу это
+            glColor3f(df::grid_color.r, df::grid_color.g, df::grid_color.b);
             glBegin(GL_LINES);
+
             for (double dy = ort.b, shag = (ort.t - ort.b) / number_of_cells; dy <= ort.t; dy += shag) {
                 glVertex2d(ort.l, dy);
                 glVertex2d(ort.r, dy);
@@ -85,16 +80,12 @@ namespace stepan_plot {
 
             glEnd();
         }
-
-        void init_display_mode() {
-            glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-            glutInitWindowSize(win_fr.w, win_fr.h);
-            glutInitWindowPosition(win_pos.X, win_pos.Y);
-            win_pos.next(win_fr);
-        }
-
+//------------------------------------------------------------------------------------------------------------
+        /** \brief - Метод инициализации размеров области рисования в окне, вызывается когда изменяются \
+         * характеристики области в которой отрисовывается график
+         * */
         void init() {
-            glClearColor(1.0, 1.0, 1.0, 1.0);  // Вынести в константы
+            glClearColor(df::background.r, df::background.g, df::background.b, df::background.a);
 
             df::Ortho ort = df::get_ortho(plt[glutGetWindow()]);
 
@@ -102,21 +93,33 @@ namespace stepan_plot {
             glLoadIdentity();
             glOrtho(ort.l, ort.r, ort.b, ort.t, ort.n, ort.f);
         }
-
+//------------------------------------------------------------------------------------------------------------
+        /** \brief - Метод нужен для того, чтобы вызвать метод draw(), который является членом класса
+         * */
         static void display() {
             currentInstance->draw();
         }
-
+//------------------------------------------------------------------------------------------------------------
+        /** \brief - Метод создает новое окно
+         * \param pl - Объект графика, его характеристики(см. класс \plot_frame)
+         * \param plotName - имя графика
+         * */
         int initDisplay(df::plot_frame pl, std::string plotName) {
-            init_display_mode();
+            glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+            glutInitWindowSize(win_fr.w, win_fr.h);
+            glutInitWindowPosition(win_pos.X, win_pos.Y);
+            win_pos.next(win_fr);
             unsigned int cW = glutCreateWindow(plotName.c_str());
             plt[cW].push_back(pl);
             currentInstance = this;
             glutDisplayFunc(StepanPlot::display);
             return cW;
         }
-
+//------------------------------------------------------------------------------------------------------------
     public:
+        /** \brief - Конструктор класса StepanPlot, если в него ничего не переданно \
+         * Прекратит выполнение программы
+         * */
         StepanPlot() {
             try {
                 throw Exception("---> В конструктор необходимо передать argc и argv\n");
@@ -125,13 +128,24 @@ namespace stepan_plot {
             }
         }
 
+        /** \brief - Конструктор класс, принимающий параметры
+         * \param argc
+         * \param argv
+         * ! Если не пердать в него параметры ничего работать не будет
+         * */
         StepanPlot(int argc, char **argv) {
             glutInit(&argc, argv);
             glutSetOption(
-                    GLUT_ACTION_ON_WINDOW_CLOSE,
+                    GLUT_ACTION_ON_WINDOW_CLOSE,  // Чтобы можно было закрывать окна
                     GLUT_ACTION_CONTINUE_EXECUTION);
         }
-
+//------------------------------------------------------------------------------------------------------------
+        /** \brief - Метод отрисовки графика 1
+         * \param x - ось Х
+         * \param y - ось У
+         * \param plotName - имя графика
+         * \param br - кисть
+         * */
         void plot(std::vector<double> x, std::vector<double> y, std::string plotName, df::Brush br) {
             df::Ortho ort(x, y);
             df::plot_frame pl(pair<vector<double>, vector<double>>(x, y), ort, br);
@@ -149,42 +163,75 @@ namespace stepan_plot {
             init();
         }
 
+        /** \brief - Метод отрисовки графика 2
+         * \param x - ось Х
+         * \param y - ось У
+         * \param plotName - имя графика
+         * Кисть случайная
+         * */
         void plot(std::vector<double> x, std::vector<double> y, std::string plotName) {
             plot(x, y, plotName, df::Brush());
         }
 
+        /** \brief - Метод отрисовки графика 3
+         * \param x - ось Х
+         * \param y - ось У
+         * Имя графика случайное
+         * Кисть случайная
+         * */
         void plot(std::vector<double> x, std::vector<double> y) {
             plot(x, y, "plot " + std::to_string(++plot_size), df::Brush());
         }
-
+//------------------------------------------------------------------------------------------------------------
+        /** \brief - Метод отвечающий за то будет ли в окне отрисован 1 или более график
+         * \param status - если true, то > 1 , если false только 1
+         * */
         void hold(bool status) {
             hold_status = status;
         }
-
+//------------------------------------------------------------------------------------------------------------
+        /** \brief - Метод отрисовки сетки
+         * \param status - отрисовывать сетку или нет
+         * */
         void grid(bool status) {
-            if (currentWindow == 0) {
-                return;
-            }
+            try {
+                if (currentWindow == 0) {
+                    throw Exception("---> Не существует окна\n");
+                }
 
-            if (plt[currentWindow].empty()) {
-                return;
-            }
+                if(plt[currentWindow].empty()) {
+                    throw Exception("---> ??? график не создан\n");
+                }
 
-            plt[currentWindow][0].grid_status = status;
+                plt[currentWindow][0].grid_status = status;
+            } catch(Exception& e) {
+                std::cout << e.what() << std::endl;
+            }
         }
-
+//------------------------------------------------------------------------------------------------------------
+        /** \brief - Метод изменения кисти
+         * \param br - кисть
+         * */
         void brush(df::Brush br) {
-            if (currentWindow == 0) {
-                return;
-            }
+            try {
+                if (currentWindow == 0) {
+                    throw Exception("---> Не существует окна\n");
+                }
 
-            if (plt[currentWindow].empty()) {
-                return;
-            }
+                if(plt[currentWindow].empty()) {
+                    throw Exception("---> ??? график не создан\n");
+                }
 
-            plt[currentWindow][plt[currentWindow].size() - 1].br = br;
+                plt[currentWindow][plt[currentWindow].size() - 1].br = br;
+            } catch(Exception& e) {
+                std::cout << e.what() << std::endl;
+            }
         }
-
+//------------------------------------------------------------------------------------------------------------
+        /** \brief - Метод установки приделов по оси Х
+         * \param left - слева
+         * \param right - справа
+         * */
         void xlim(double left, double right) {
             try {
                 if (currentWindow == 0) {
@@ -202,6 +249,10 @@ namespace stepan_plot {
             }
         }
 
+        /** \brief - Метод установки приделов по оси У
+         * \param bottom - снизу
+         * \param top - сверху
+         * */
         void ylim(double bottom, double top) {
             try {
                 if (currentWindow == 0) {
@@ -218,16 +269,23 @@ namespace stepan_plot {
                 std::cout << e.what() << std::endl;
             }
         }
-
+//------------------------------------------------------------------------------------------------------------
+        /** \brief - Метод вызво отрисовки ВСЕХ графиков
+         * ! Примечание: код после не будет исполнен
+         * */
         void call() {
             glutMainLoop();
         }
 
+        /** \brief  - Деструктор, аналогичен методу call()
+         * */
         ~StepanPlot() {
             glutMainLoop();
         }
-    };
-};
+
+    };  // StepanPlot
+
+};  // stepan_plot
 
 using namespace stepan_plot;
 
